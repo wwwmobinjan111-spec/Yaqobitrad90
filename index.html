@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YaqobiTrad - Live Cloud Trading Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase Real Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: #060b13; color: #94a3b8; min-height: 100vh; padding-bottom: 30px; overflow-x: hidden; }
+
+        .ticker-container { overflow: hidden; white-space: nowrap; background: #030712; border-bottom: 1px solid #111827; padding: 6px 0; direction: ltr; }
+        .ticker-content { display: inline-flex; gap: 20px; animation: ticker 35s linear infinite; font-size: 11px; font-weight: 600; color: #f8fafc; }
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        header { background: #0b1320; border-bottom: 1px solid #131f33; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 40; }
+        .balance-badge { background: #070f1e; border: 1px solid #17253d; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; color: #f8fafc; display: flex; align-items: center; gap: 6px; }
+        .balance-badge span { color: #00f2fe; }
+        .add-btn { background: #064e3b; color: #10b981; border: none; width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; }
+
+        .header-right { display: flex; align-items: center; gap: 8px; }
+        .brand-btn { background: #09203f; border: 1px solid #133a68; padding: 5px 10px; border-radius: 16px; color: #00f2fe; font-weight: bold; font-size: 12px; display: flex; align-items: center; gap: 5px; }
+
+        main { padding: 12px; max-width: 440px; margin: 0 auto; }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .card { background: #0b1320; border: 1px solid #131f33; border-radius: 20px; padding: 16px; margin-bottom: 16px; }
+
+        .timer-wrapper { display: flex; justify-content: center; margin: 16px 0; }
+        .timer-circle { 
+            width: 130px; height: 130px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 24px; font-weight: bold; color: #ffffff; 
+            position: relative; background: #030712;
+            box-shadow: 0 0 15px rgba(0,242,254,0.15);
+        }
+        .timer-circle::before {
+            content: ''; position: absolute; inset: -4px; border-radius: 50%;
+            background: conic-gradient(#00f2fe 360deg, #17253d 0deg);
+            z-index: 0;
+        }
+        .timer-circle::after {
+            content: ''; position: absolute; inset: 4px; border-radius: 50%;
+            background: #0b1320; z-index: 1;
+        }
+        .timer-value { position: relative; z-index: 2; text-shadow: 0 0 8px rgba(0,242,254,0.5); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin-bottom: 16px; }
+        .stat-ring { 
+            width: 50px; height: 50px; border-radius: 50%; margin: 0 auto 4px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 11px; font-weight: bold; color: #ffffff;
+            position: relative; background: #030712;
+        }
+        .stat-ring::before { content: ''; position: absolute; inset: -3px; border-radius: 50%; background: var(--gauge-color); z-index: 0; }
+        .stat-ring::after { content: ''; position: absolute; inset: 2px; border-radius: 50%; background: #0b1320; z-index: 1; }
+        .stat-ring-value { position: relative; z-index: 2; }
+        .stat-label { font-size: 9px; color: #64748b; font-weight: 600; }
+
+        .amount-controls { display: flex; align-items: center; background: #030712; border: 1px solid #17253d; border-radius: 12px; overflow: hidden; margin-bottom: 10px; direction: ltr; }
+        .amt-btn { background: #17253d; border: none; color: #f8fafc; width: 44px; height: 44px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .amt-input { background: transparent; border: none; text-align: center; color: #fff; font-size: 18px; font-weight: bold; flex: 1; outline: none; }
+
+        .quick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; direction: ltr; }
+        .quick-btn { background: #070f1e; border: 1px solid #17253d; color: #64748b; border-radius: 8px; padding: 8px 0; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; }
+        .quick-btn.active { color: #00f2fe; border-color: #00f2fe; }
+
+        .std-input { width: 100%; background: #030712; border: 1px solid #17253d; border-radius: 10px; padding: 11px; color: #fff; font-size: 11px; outline: none; margin-top: 4px; margin-bottom: 10px; }
+
+        .action-btn { width: 100%; background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #030712; border: none; padding: 13px; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(0,242,254,0.3); text-decoration: none; }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; background: #334155; color: #94a3b8; box-shadow: none; }
+
+        .drawer-menu { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: #0b1320; border: 1px solid #131f33; z-index: 2000; transition: left 0.3s ease; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .drawer-menu.open { left: 0 !important; }
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1500; display: none; }
+        .drawer-overlay.show { display: block; }
+
+        .drawer-item { background: #030712; border: 1px solid #17253d; color: #fff; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 12px; cursor: pointer; width: 100%; text-align: left; }
+        .drawer-item i { color: #00f2fe; font-size: 16px; width: 20px; }
+
+        .modal { position: fixed; inset: 0; background: rgba(3, 7, 18, 0.95); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px; }
+        .modal.show { display: flex; }
+        .modal-box { background: #0b1320; border: 1px solid #131f33; border-radius: 20px; width: 100%; max-width: 380px; padding: 22px; max-height: 85vh; overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+    <!-- Price Ticker -->
+    <div class="ticker-container">
+        <div class="ticker-content">
+            <span><i class="fa-brands fa-bitcoin" style="color:#f59e0b"></i> BTC $80,854 +1.5%</span>
+            <span><i class="fa-solid fa-coins" style="color:#6366f1"></i> ETH $2,352 +2.0%</span>
+            <span><i class="fa-solid fa-bolt" style="color:#10b981"></i> BNB $744.46 +1.3%</span>
+            <span><i class="fa-solid fa-circle-dollar-to-slot" style="color:#00f2fe"></i> USDT $0.9987 0.0%</span>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div style="display:flex; align-items:center; gap:6px;">
+            <button onclick="toggleDrawer()" style="background:none; border:none; color:#00f2fe; font-size:18px; cursor:pointer;"><i class="fa-solid fa-bars"></i></button>
+            <div class="balance-badge">
+                <span>Total Balance</span>
+                <span id="balance-display">0.00</span> <span>OMT</span>
+            </div>
+            <button class="add-btn" onclick="switchTab('deposit')">+</button>
+        </div>
+        <div class="header-right">
+            <div class="brand-btn"><i class="fa-solid fa-bolt"></i> YaqobiTrad</div>
+        </div>
+    </header>
+
+    <!-- Side Menu Drawer -->
+    <div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
+    <div class="drawer-menu" id="drawer-menu">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #17253d; padding-bottom:12px;">
+            <div style="font-weight:bold; color:#fff; font-size:15px;"><i class="fa-solid fa-bolt" style="color:#00f2fe"></i> YaqobiTrad Menu</div>
+            <button onclick="toggleDrawer()" style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <button class="drawer-item" onclick="switchTab('bots')"><i class="fa-solid fa-robot"></i><span>Trading Bots</span></button>
+        <button class="drawer-item" onclick="switchTab('deposit')"><i class="fa-solid fa-arrow-down"></i><span>Deposit Funds</span></button>
+        <button class="drawer-item" onclick="switchTab('withdraw')"><i class="fa-solid fa-arrow-up"></i><span>Withdraw</span></button>
+        <button class="drawer-item" onclick="verifyAdminAccess()"><i class="fa-solid fa-shield-halved" style="color:#f59e0b;"></i><span>Admin Panel</span></button>
+        <button class="drawer-item" onclick="logoutUser()" style="color:#ef4444;"><i class="fa-solid fa-right-from-bracket" style="color:#ef4444;"></i><span>Logout</span></button>
+    </div>
+
+    <main>
+        <!-- TAB 1: TRADING BOTS -->
+        <section id="tab-bots" class="view-section active">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <span style="font-weight:bold; color:#fff; font-size:12px;">G10 • #180594</span>
+                    <span style="color:#10b981; font-size:10px;">EUR/USD (Forex)</span>
+                </div>
+
+                <div class="timer-wrapper">
+                    <div class="timer-circle">
+                        <span class="timer-value" id="timer-display">00:60</span>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div>
+                        <div class="stat-ring" style="--gauge-color: conic-gradient(#ef4444 14.4%, #17253d 0);"><span class="stat-ring-value">14.4%</span></div>
+                        <div class="stat-label">Loss Cover</div>
+                    </div>
+                    <div>
+                        <div class="stat-ring" style="--gauge-color: conic-gradient(#00f2fe 51.9%, #17253d 0);"><span class="stat-ring-value">51.9%</span></div>
+                        <div class="stat-label">Win Rate</div>
+                    </div>
+                    <div>
+                        <div class="stat-ring" style="--gauge-color: conic-gradient(#10b981 68.0%, #17253d 0);"><span class="stat-ring-value">68.0%</span></div>
+                        <div class="stat-label">Target Profit</div>
+                    </div>
+                </div>
+
+                <label style="font-size:10px; color:#94a3b8;">Investment amount</label>
+                <div class="amount-controls">
+                    <button class="amt-btn" onclick="changeAmt(-1)">-</button>
+                    <input type="number" id="invest-amt" class="amt-input" value="10" min="1">
+                    <button class="amt-btn" onclick="changeAmt(1)">+</button>
+                </div>
+
+                <div class="quick-grid">
+                    <button class="quick-btn" onclick="setAmt(10)">10 OMT</button>
+                    <button class="quick-btn" onclick="setAmt(20)">20 OMT</button>
+                    <button class="quick-btn" onclick="setAmt(50)">50 OMT</button>
+                    <button class="quick-btn active" onclick="setAmt(100)">100 OMT</button>
+                </div>
+
+                <button class="action-btn" id="start-trade-btn" onclick="startInvestment()">
+                    <i class="fa-solid fa-bolt"></i> <span>Start Auto Trade 🚀</span>
+                </button>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <h3 style="color:#00f2fe; font-size:14px;"><i class="fa-solid fa-clock-rotate-left"></i> <span>Signal History Log</span></h3>
+                </div>
+                <div id="history-list" style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="text-align:center; padding:14px; font-size:11px; color:#64748b;">No trades yet.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: DEPOSIT -->
+        <section id="tab-deposit" class="view-section">
+            <div class="card">
+                <h3 style="color:#10b981; font-size:15px; margin-bottom:10px;">Deposit Funds</h3>
+                <label style="font-size:10px; color:#94a3b8;">USDT BEP20 Wallet Address:</label>
+                <div style="position:relative; margin-bottom:10px;">
+                    <input type="text" class="std-input" id="display-admin-wallet" readonly value="0x7cfd634c9bded490f8601506c6568766cf827ce8" style="margin-bottom:0; font-size:10px; color:#00f2fe; padding-right:55px;">
+                    <button onclick="copyDepositWallet()" style="position:absolute; right:4px; top:6px; background:#17253d; border:1px solid #00f2fe; color:#fff; padding:5px 10px; border-radius:6px; font-size:10px; cursor:pointer;">Copy</button>
+                </div>
+                
+                <label style="font-size:10px; color:#94a3b8;">Amount (Min 30 OMT):</label>
+                <input type="number" class="std-input" id="dep-amt-input" value="30">
+                <button class="action-btn" style="background:#10b981; color:#fff;" onclick="submitDeposit()">Request Deposit</button>
+            </div>
+        </section>
+
+        <!-- TAB 3: WITHDRAW -->
+        <section id="tab-withdraw" class="view-section">
+            <div class="card">
+                <h3 style="color:#f59e0b; font-size:15px; margin-bottom:10px;">Withdraw Funds</h3>
+                <label style="font-size:10px; color:#94a3b8;">BEP20 Wallet Address:</label>
+                <input type="text" class="std-input" id="w-addr" placeholder="0x...">
+                
+                <label style="font-size:10px; color:#94a3b8;">Withdraw Amount (Min 40 OMT):</label>
+                <input type="number" class="std-input" id="w-amt" value="40">
+                <button class="action-btn" style="background:#f59e0b; color:#030712;" onclick="submitWithdrawal()">Request Withdrawal</button>
+            </div>
+        </section>
+
+        <!-- TAB 4: ADMIN PANEL -->
+        <section id="tab-admin" class="view-section">
+            <div class="card">
+                <h3 style="color:#00f2fe; font-size:15px; margin-bottom:12px;"><i class="fa-solid fa-shield-halved"></i> Admin Panel</h3>
+                <h4 style="color:#fff; font-size:12px; margin-bottom:6px;">Pending User Requests</h4>
+                <div id="admin-requests-list" style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="font-size:11px; color:#64748b; text-align:center;">Loading...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- AUTH MODAL -->
+    <div class="modal show" id="auth-modal">
+        <div class="modal-box" style="text-align:center;">
+            <div style="display:inline-flex; align-items:center; gap:8px; background:linear-gradient(135deg, #09203f 0%, #133a68 100%); border:1px solid #00f2fe; padding:8px 18px; border-radius:30px; margin-bottom:16px;">
+                <i class="fa-solid fa-bolt" style="color:#00f2fe; font-size:16px;"></i>
+                <span style="color:#00f2fe; font-weight:800; font-size:15px;">YaqobiTrad</span>
+            </div>
+
+            <h2 style="color:#fff; font-size:18px; margin-bottom:14px; text-align:center;">ورود به حساب واقعی</h2>
+            
+            <div style="text-align:left;">
+                <label style="font-size:10px; color:#94a3b8;">First name</label>
+                <input type="text" class="std-input" id="reg-fname" placeholder="First name">
+
+                <label style="font-size:10px; color:#94a3b8;">Last name</label>
+                <input type="text" class="std-input" id="reg-lname" placeholder="Last name">
+
+                <label style="font-size:10px; color:#94a3b8;">Email address</label>
+                <input type="email" class="std-input" id="reg-email" placeholder="you@example.com">
+            </div>
+
+            <button class="action-btn" id="auth-main-btn" onclick="handleCloudAuth()" style="margin-top:10px;">Continue <i class="fa-solid fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <!-- GENERAL MODAL -->
+    <div class="modal" id="app-modal">
+        <div class="modal-box" style="text-align:center;">
+            <h3 id="m-title" style="color:#fff; font-size:15px; margin-bottom:6px;">Notification</h3>
+            <p id="m-desc" style="font-size:11px; color:#94a3b8; margin-bottom:14px;"></p>
+            <button class="action-btn" onclick="closeModal()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://jyayrhggbmmxkcbuefmn.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5YXlyaGdnYm1teGtjYnVlZm1uIxlucm9sZSI6ImFub24iLCJpYXQiOjE3OTI4MTgwMjgsImV4cCI6MjEwODM5NDAyOH0.cOh9CvltUSP9wsGONEm7yjWEQT4Pm0I4kwDuwFVIl2U";
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let balance = 0.00;
+
+        window.onload = async () => {
+            let savedEmail = localStorage.getItem('yt_real_email');
+            if (savedEmail) {
+                let { data } = await supabase.from('profiles').select('*').eq('email', savedEmail).maybeSingle();
+                if (data) {
+                    currentUser = data;
+                    balance = parseFloat(data.balance || 0);
+                    document.getElementById('auth-modal').classList.remove('show');
+                    document.getElementById('balance-display').innerText = balance.toFixed(2);
+                    loadTradeHistory();
+                }
+            }
+        };
+
+        async function handleCloudAuth() {
+            let fname = document.getElementById('reg-fname').value.trim();
+            let lname = document.getElementById('reg-lname').value.trim();
+            let email = document.getElementById('reg-email').value.trim();
+
+            if (!email) { showModal('Error', 'لطفاً ایمیل خود را وارد کنید.'); return; }
+
+            let btn = document.getElementById('auth-main-btn');
+            btn.disabled = true;
+            btn.innerText = 'Connecting to Cloud...';
+
+            try {
+                // بررسی وجود کاربر در دیتابیس Supabase
+                let { data: existing } = await supabase.from('profiles').select('*').eq('email', email).maybeSingle();
+
+                if (existing) {
+                    currentUser = existing;
+                    balance = parseFloat(existing.balance || 0);
+                } else {
+                    // ساخت کاربر جدید مستقیم در جدول profiles ساب‌پیس
+                    let newUserId = 'user_' + Math.random().toString(36).substring(2, 9) + Date.now();
+                    let { data: created, error } = await supabase.from('profiles').insert([{
+                        id: newUserId,
+                        email: email,
+                        first_name: fname || 'User',
+                        last_name: lname || '',
+                        balance: 0.00
+                    }]).select().single();
+
+                    if (error) {
+                        // اگر تکراری بود یا خطا داد، دوباره جستجو کن
+                        let { data: retry } = await supabase.from('profiles').select('*').eq('email', email).single();
+                        if (retry) { currentUser = retry; balance = parseFloat(retry.balance || 0); }
+                        else { throw new Error(error.message); }
+                    } else {
+                        currentUser = created;
+                        balance = 0.00;
+                    }
+                }
+
+                if (currentUser) {
+                    localStorage.setItem('yt_real_email', email);
+                    document.getElementById('auth-modal').classList.remove('show');
+                    document.getElementById('balance-display').innerText = balance.toFixed(2);
+                    loadTradeHistory();
+                }
+            } catch (err) {
+                showModal('Cloud Error', err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `Continue <i class="fa-solid fa-arrow-right"></i>`;
+            }
+        }
+
+        async function logoutUser() {
+            localStorage.removeItem('yt_real_email');
+            currentUser = null;
+            location.reload();
+        }
+
+        async function startInvestment() {
+            let amt = parseFloat(document.getElementById('invest-amt').value) || 0;
+            if (balance <= 0 || amt > balance) { showModal('Error', 'موجودی ناکافی است.'); return; }
+
+            let btn = document.getElementById('start-trade-btn');
+            btn.disabled = true;
+            btn.innerText = 'Processing...';
+
+            balance -= amt;
+            await supabase.from('profiles').update({ balance: balance }).eq('id', currentUser.id);
+            document.getElementById('balance-display').innerText = balance.toFixed(2);
+
+            setTimeout(async () => {
+                let isWin = Math.random() > 0.45;
+                let profitLoss = isWin ? (amt * 0.63) : -amt;
+                if (isWin) balance += (amt + profitLoss);
+                
+                await supabase.from('profiles').update({ balance: balance }).eq('id', currentUser.id);
+                await supabase.from('trades').insert([{ user_id: currentUser.id, asset: "EUR/USD (Forex)", amount: amt, is_win: isWin, profit_loss: profitLoss }]);
+
+                document.getElementById('balance-display').innerText = balance.toFixed(2);
+                loadTradeHistory();
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-bolt"></i> <span>Start Auto Trade 🚀</span>`;
+            }, 3000);
+        }
+
+        async function loadTradeHistory() {
+            if (!currentUser) return;
+            let { data } = await supabase.from('trades').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+            let container = document.getElementById('history-list');
+            if (!data || data.length === 0) { container.innerHTML = `<div style="text-align:center; padding:14px; font-size:11px; color:#64748b;">No trades yet.</div>`; return; }
+            container.innerHTML = data.map(item => `
+                <div style="background:#030712; border:1px solid #17253d; padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; font-size:12px;">
+                    <div><strong style="color:#fff;">${item.asset}</strong><div style="font-size:10px; color:#64748b;">Amt: ${item.amount} OMT</div></div>
+                    <div style="color:${item.is_win ? '#10b981' : '#ef4444'}; font-weight:bold;">${item.is_win ? 'Win' : 'Loss'}</div>
+                </div>
+            `).join('');
+        }
+
+        async function submitDeposit() {
+            let amt = parseFloat(document.getElementById('dep-amt-input').value) || 0;
+            if (amt < 30) { showModal('Error', 'حداقل مبلغ واریز ۳۰ OMT است.'); return; }
+            await supabase.from('transactions').insert([{ user_id: currentUser.id, type: 'deposit', amount: amt, status: 'pending' }]);
+            showModal('Submitted', 'درخواست واریز در پایگاه داده ثبت شد.');
+        }
+
+        async function submitWithdrawal() {
+            let amt = parseFloat(document.getElementById('w-amt').value) || 0;
+            let addr = document.getElementById('w-addr').value.trim();
+            if (amt < 40 || amt > balance) { showModal('Error', 'موجودی ناکافی است.'); return; }
+            await supabase.from('transactions').insert([{ user_id: currentUser.id, type: 'withdraw', amount: amt, wallet_address: addr, status: 'pending' }]);
+            showModal('Submitted', 'درخواست برداشت در پایگاه داده ثبت شد.');
+        }
+
+        function toggleDrawer() {
+            document.getElementById('drawer-menu').classList.toggle('open');
+            document.getElementById('drawer-overlay').classList.toggle('show');
+        }
+
+        function switchTab(tabId) {
+            toggleDrawer();
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            let sec = document.getElementById('tab-' + tabId);
+            if (sec) sec.classList.add('active');
+            if (tabId === 'admin') loadAdminRequests();
+        }
+
+        async function loadAdminRequests() {
+            let { data } = await supabase.from('transactions').select('*').eq('status', 'pending');
+            let container = document.getElementById('admin-requests-list');
+            if (!data || data.length === 0) { container.innerHTML = `<div style="font-size:11px; color:#64748b; text-align:center;">No pending requests.</div>`; return; }
+            container.innerHTML = data.map(req => `
+                <div style="background:#030712; border:1px solid #17253d; padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; font-size:11px;">
+                    <div><strong style="color:${req.type === 'deposit' ? '#10b981' : '#f59e0b'};">${req.type.toUpperCase()}</strong>: ${req.amount} OMT</div>
+                    <button onclick="approveCloudRequest('${req.id}', '${req.user_id}', '${req.type}', ${req.amount})" style="background:#10b981; color:#fff; border:none; padding:5px 10px; border-radius:6px; font-weight:bold; cursor:pointer;">Approve ✅</button>
+                </div>
+            `).join('');
+        }
+
+        async function approveCloudRequest(reqId, userId, type, amount) {
+            let { data: profile } = await supabase.from('profiles').select('balance').eq('id', userId).single();
+            let newBal = profile ? profile.balance : 0;
+            if (type === 'deposit') newBal += amount; else newBal -= amount;
+            await supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
+            await supabase.from('transactions').update({ status: 'approved' }).eq('id', reqId);
+            showModal('Approved', 'تراکنش در دیتابیس تایید و اعمال شد.');
+            loadAdminRequests();
+            if (currentUser && currentUser.id === userId) {
+                balance = newBal;
+                document.getElementById('balance-display').innerText = balance.toFixed(2);
+            }
+        }
+
+        function verifyAdminAccess() {
+            toggleDrawer();
+            let pin = prompt("Enter Admin Password:");
+            if (pin === "Aa1111111111") switchTab('admin');
+        }
+
+        function showModal(title, desc) { document.getElementById('m-title').innerText = title; document.getElementById('m-desc').innerText = desc; document.getElementById('app-modal').classList.add('show'); }
+        function closeModal() { document.getElementById('app-modal').classList.remove('show'); }
+        function copyDepositWallet() { navigator.clipboard.writeText(document.getElementById('display-admin-wallet').value); showModal('Copied', 'Copied!'); }
+        function setAmt(v) { document.getElementById('invest-amt').value = v; }
+        function changeAmt(d) { let i = document.getElementById('invest-amt'); i.value = Math.max(1, (parseFloat(i.value)||0)+d); }
+    </script>
+</body>
+</html>
