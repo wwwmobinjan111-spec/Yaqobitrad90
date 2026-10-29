@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YaqobiTrad - Trading Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background-color: #060b13; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .box { background: #0b1320; border: 1px solid #131f33; border-radius: 20px; width: 100%; max-width: 380px; padding: 22px; text-align: center; }
+        .input { width: 100%; background: #030712; border: 1px solid #17253d; border-radius: 10px; padding: 12px; color: #fff; font-size: 13px; margin: 6px 0 12px 0; outline: none; text-align: left; }
+        .btn { width: 100%; background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%); color: #030712; border: none; padding: 14px; border-radius: 12px; font-size: 14px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="box" id="auth-box">
+        <h2 style="color:#00f2fe; margin-bottom:15px;"><i class="fa-solid fa-bolt"></i> YaqobiTrad</h2>
+        <div style="text-align:left;">
+            <label style="font-size:11px; color:#94a3b8;">Email Address</label>
+            <input type="email" class="input" id="user-email" placeholder="you@example.com">
+            
+            <label style="font-size:11px; color:#94a3b8;">Password</label>
+            <input type="password" class="input" id="user-pass" placeholder="Password">
+        </div>
+        <button class="btn" onclick="directLogin()">Continue 🚀</button>
+    </div>
+
+    <div class="box" id="app-box" style="display:none;">
+        <h2 style="color:#10b981; margin-bottom:10px;">Welcome to Dashboard! 🎉</h2>
+        <p style="font-size:12px; color:#94a3b8; margin-bottom:15px;">Your balance: <span style="color:#00f2fe; font-weight:bold; font-size:16px;">100.00 OMT</span></p>
+        <button class="btn" onclick="alert('Trading bot is active!')">Start Trading</button>
+    </div>
+
+    <script>
+        function directLogin() {
+            let email = document.getElementById('user-email').value.trim();
+            let pass = document.getElementById('user-pass').value.trim();
+            
+            if(!email || !pass) {
+                alert('لطفاً ایمیل و پسورد را وارد کنید!');
+                return;
+            }
+            
+            document.getElementById('auth-box').style.display = 'none';
+            document.getElementById('app-box').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
